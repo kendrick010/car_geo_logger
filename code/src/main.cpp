@@ -1,56 +1,65 @@
-#include "SPI.h"
+// Standard libraries
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include "credentials.h"
+
+// SD-Card library
+#include <SPI.h>
 #include <SD.h>
 
-const int chipSelect = D8;
-File myFile;
+// GPS library
+#include <SoftwareSerial.h>
+#include <TinyGPS++.h>
 
-void write_text() {
-  myFile = SD.open("data_log.txt", FILE_WRITE);
+// ThingSpeak API library
+#include "ThingSpeak.h"
 
-  // if the file opened okay, write to it:
-  if (myFile) {
-    Serial.print("Writing to data_log.txt...");
-    myFile.println("testing 1, 2, 3.");
-    // close the file:
-    myFile.close();
-    Serial.println("done.");
-  } else {
-    // if the file didn't open, print an error:
-    Serial.println("error opening data_log.txt");
+WiFiClient client;            // WiFi object
+TinyGPSPlus gps;              // TinyGPS++ object
+SoftwareSerial ss(4, 5);     // Serial connection to the GPS device.
+
+// Timer variables
+unsigned long delayBetweenRequests = 60000;     // Time between requests (1 minute) 
+unsigned long requestDueTime;
+
+const int chipSelect = D8;                // SD-Card module CS pin
+
+// Connect to Wifi
+void wifiSetup() {
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, NULL);
+  Serial.println("");
+
+  // Wait for connection
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
   }
-
-  // re-open the file for reading:
-  myFile = SD.open("data_log.txt");
-  if (myFile) {
-    Serial.println("data_log.txt:");
-
-    // read from the file until there's nothing else in it:
-    while (myFile.available()) {
-      Serial.write(myFile.read());
-    }
-    // close the file:
-    myFile.close();
-  } else {
-    // if the file didn't open, print an error:
-    Serial.println("error opening data_log.txt");
-  }
+  Serial.println("");
+  Serial.print("Connected to ");
+  Serial.println(ssid);
 }
 
 void setup() {
-  // Open serial communications and wait for port to open:
+  // put your setup code here, to run once:
   Serial.begin(115200);
+  ss.begin(9600);
 
   pinMode(chipSelect, OUTPUT);
-  digitalWrite(chipSelect, HIGH);
 
-  Serial.print("\r\nWaiting for SD card to initialise...");
-  if (!SD.begin(chipSelect)) { // CS is D8 in this example
-    Serial.println("Initialising failed!");
-    return;
+  if (!SD.begin(chipSelect)) {
+    Serial.println("SD-Card initialization failed");
+    while (true);
   }
-  Serial.println("Initialisation completed");
+  Serial.println("SD-Card initialization finished");
+
+  wifiSetup();
 }
 
 void loop() {
-  // nothing happens after setup finishes.
+  // put your main code here, to run repeatedly:
+  if (millis() > requestDueTime) {
+    // do stuff
+    requestDueTime = millis() + delayBetweenRequests;
+  }
 }
