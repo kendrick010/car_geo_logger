@@ -1,31 +1,37 @@
 // Standard libraries
-#include <WiFi.h>
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
 #include "credentials.h"
+
+// SD-Card library
+#include <SPI.h>
+#include <SD.h>
 
 // GPS library
 #include <SoftwareSerial.h>
 #include <TinyGPS++.h>
 
-TinyGPSPlus gps;                // TinyGPS++ object
-SoftwareSerial ss(16, 17);      // Serial connection to the GPS device.
+// ThingSpeak API library
+#include "ThingSpeak.h"
+
+WiFiClient client;            // WiFi object
+TinyGPSPlus gps;              // TinyGPS++ object
+SoftwareSerial ss(4, 5);      // Serial connection to the GPS device.
+
+// Time between requests (30 seconds)
+unsigned long delayBetweenRequests = 30000; 
+
+// SD-Card module CS pin
+const int chipSelect = D8;
 
 String latitude = "0.0", longitude = "0.0";
 String date = "0.0";
 String timeRecord = "0.0";
 String speed = "0.0";
 
-void initWiFi() {
+void connectWifi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssidMom, passwordMom);
-  Serial.println("");
-
-  // Wait for connection
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.print("Connected!");
 }
 
 void getLocation() {
@@ -67,14 +73,46 @@ void getSpeed() {
   }
 }
 
+void writeToThingSpeak() {
+  // Log to each field
+  ThingSpeak.setField(1, latitude);
+  ThingSpeak.setField(2, longitude);
+  ThingSpeak.setField(3, timeRecord);
+  ThingSpeak.setField(4, date);
+  ThingSpeak.setField(5, speed);
+
+  ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+}
+
+void storeToSD() {
+  // Do nothing
+}
+
 void setup() {
+  // Put your setup code here, to run once:
   Serial.begin(115200);
   ss.begin(9600);
-  initWiFi();
+
+  pinMode(chipSelect, OUTPUT);
+  digitalWrite(chipSelect, HIGH);
+
+  // Initialize SD-Card
+  // if (!SD.begin(chipSelect)) {
+  //   Serial.println("SD-Card initialization failed");
+  //   while (true);
+  // }
+  // Serial.println("SD-Card initialization finished");
 }
 
 void loop() {
+  // Put your main code here, to run repeatedly:
   while (ss.available() > 0) {
+    unsigned long startElapsed = millis();
+
+    // Attempt to connect to wifi, break after delayBetweenRequests
+    //while (millis() - startElapsed < delayBetweenRequests) { connectWifi(); }
+    if (WiFi.status() == WL_CONNECTED) Serial.println("Connected to Wifi!");
+
     // Read GPS data
     if (gps.encode(ss.read())) {
       getLocation();
@@ -83,5 +121,16 @@ void loop() {
       getSpeed();
       // All invalid gps data will still store previous valid data
     }
+
+    // if(WiFi.status() != WL_CONNECTED) {
+    //   // Store to ThingSpeak
+    //   writeToThingSpeak();
+    //   Serial.println("Sent to ThingSpeak");
+    // }
+    // else {
+    //   // Store into SD-Card
+    //   storeToSD();
+    // }
+    delay(1000);
   }
 }
