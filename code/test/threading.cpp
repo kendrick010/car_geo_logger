@@ -1,5 +1,6 @@
 // WiFi
 #include <WiFi.h>
+#include <esp_task_wdt.h>
 #include "credentials.hpp"
 
 // SD-Card
@@ -14,15 +15,17 @@
 
 #define WIFI_TIMEOUT_MS 20000
 #define THINGSPEAK_TIMEOUT_MS 30000
-#define CHIPSET 8
+#define WATCHDOG_TIMEOUT_S 30
 
 WiFiClient client;
+File file;
 
 // Save last ThingSpeak request
 unsigned long lastMS; 
 
-// taskConnectWifi: Maintain wifi connection
-void taskConnectWifi (void * parameters) {
+// connectWifiTask: Maintain wifi connection
+void connectWifiTask (void * parameters) {
+  esp_task_wdt_init(30, false);
   for (;;) {
     if (WiFi.status() == WL_CONNECTED) {
       vTaskDelay(10000 / portTICK_PERIOD_MS);
@@ -30,7 +33,7 @@ void taskConnectWifi (void * parameters) {
     }
     
     WiFi.mode(WIFI_STA);
-    WiFi.begin(ssidMom, passwordMom);
+    WiFi.begin(ssidPhone, passwordPhone);
 
     unsigned long startAttemptTime = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < WIFI_TIMEOUT_MS) { }
@@ -52,18 +55,33 @@ void writeToThingSpeak() {
   ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
 }
 
-// Long each field to SD-Card
+// Log each field to SD-Card
 void writeToSD() {
-  // nothing
+  file = SD.open("/datalog.txt", FILE_APPEND);
+  if (file) {
+    String dataGPS = latitude + "|" + longitude + "|" + date + "|" + timeRecord + "|" + speed;
+    file.println(dataGPS);
+    Serial.println("----------- Appended to datalog.txt -----------");
+    Serial.println("\n");
+  } else {
+    Serial.println("----------- Error opening datalog.txt -----------");
+    Serial.println("\n");
+  }
+  file.close();
 }
 
 void setup() {
   Serial.begin(115200);
   ss.begin(9600);
 
+  if (!SD.begin()) {
+    Serial.println("SD-Card initialization failed");
+    while (1);
+  }
+  Serial.println("SD-Card initialization done");
+
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
-  pinMode(CHIPSET, OUTPUT);
   delay(500);
 
   /*Syntax for assigning task to a core:
@@ -77,7 +95,7 @@ void setup() {
                   taskCore);      // Core where the task should run 
   */
   
-  xTaskCreatePinnedToCore(taskConnectWifi, "taskConnectWifi", 5000, NULL, 1, NULL, 0);        
+  xTaskCreatePinnedToCore(connectWifiTask, "connectWifiTask", 5000, NULL, 1, NULL, 0);        
   delay(500); 
 }
 
