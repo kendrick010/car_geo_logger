@@ -3,10 +3,21 @@
 
 File myFile;
 
+int countSDEntries() {
+  int numEntries = 0;
+
+  while (myFile.available()) {
+    char buffer = myFile.read();
+    if (buffer == '\n') numEntries++;
+  }
+  myFile.seek(0);
+
+  return numEntries;
+}
+
 void setup() {
   // Open serial communications and wait for port to open:
   Serial.begin(115200);
-
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
@@ -15,14 +26,20 @@ void setup() {
     Serial.println("initialization failed!");
     while (1);
   }
-  Serial.println("initialization done.");
 
-  myFile = SD.open("/datalog.txt", FILE_READ);
-
+  myFile = SD.open("/templog.txt");
+  int count = 0;
   while (myFile.available()) {
-    Serial.write(myFile.read());
-    Serial.println("\n");
+    // String entry = myFile.readStringUntil('\n');
+    // Serial.print(entry);
+    myFile.read();
+    count++;
   }
+  myFile.close();
+
+  Serial.println(count);
+  
+
   
 }
 
