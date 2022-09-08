@@ -42,6 +42,19 @@ void connectWifiTask (void * parameters) {
   }
 }
 
+// Get number of data entries in SD
+int countSDEntries() {
+  int numEntries = 0;
+
+  while (myFile.available()) {
+    char buffer = myFile.read();
+    if (buffer == '\n') numEntries++;
+  }
+  myFile.seek(0);
+
+  return numEntries;
+}
+
 // Log each field to ThingSpeak
 void writeToThingSpeak() {
   ThingSpeak.begin(client);
@@ -55,17 +68,28 @@ void writeToThingSpeak() {
   ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
 }
 
+// Offload SD data to ThingSpeak
+void offloadSD() {
+  unsigned long startAttemptTime = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < WIFI_TIMEOUT_MS) { }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    file = SD.open("/datalog.txt", FILE_READ);
+    int entryLimit = countSDEntries();
+    for (int i = 0; i < entryLimit; i++) {
+      String buffer = myFile.readStringUntil('%');
+      // parse into lat, long, time, date, speed
+      // call writeToTHingSpeak()
+    }
+  }
+}
+
 // Log each field to SD-Card
 void writeToSD() {
   file = SD.open("/datalog.txt", FILE_APPEND);
   if (file) {
-    String dataGPS = latitude + "|" + longitude + "|" + date + "|" + timeRecord + "|" + speed;
+    String dataGPS = latitude + "|" + longitude + "|" + date + "|" + timeRecord + "|" + speed + "%";
     file.println(dataGPS);
-    Serial.println("----------- Appended to datalog.txt -----------");
-    Serial.println("\n");
-  } else {
-    Serial.println("----------- Error opening datalog.txt -----------");
-    Serial.println("\n");
   }
   file.close();
 }
@@ -81,8 +105,6 @@ void setup() {
   Serial.println("SD-Card initialization done");
 
   WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-  delay(500);
 
   /*Syntax for assigning task to a core:
   xTaskCreatePinnedToCore(
@@ -97,25 +119,28 @@ void setup() {
   
   xTaskCreatePinnedToCore(connectWifiTask, "connectWifiTask", 5000, NULL, 1, NULL, 0);        
   delay(500); 
+
+  offloadSD();
+
 }
 
 void loop() {
-  while (ss.available() > 0) {
-    if (gps.encode(ss.read())) {
-      getLocation();
-      getDate();
-      getTime();
-      getSpeed();
-      // All invalid gps data will still store previous valid data
-      if (WiFi.status() == WL_CONNECTED) { Serial.println("Connected to internet"); }
-      else { Serial.println("Disconnected"); }
-      printGPSData();
-    }
-  }
+  // while (ss.available() > 0) {
+  //   if (gps.encode(ss.read())) {
+  //     getLocation();
+  //     getDate();
+  //     getTime();
+  //     getSpeed();
+  //     // All invalid gps data will still store previous valid data
+  //     if (WiFi.status() == WL_CONNECTED) { Serial.println("Connected to internet"); }
+  //     else { Serial.println("Disconnected"); }
+  //     printGPSData();
+  //   }
+  // }
 
-  if (millis() - lastMS >= THINGSPEAK_TIMEOUT_MS) {
-    if (WiFi.status() == WL_CONNECTED) { writeToThingSpeak(); }
-    else { writeToSD(); }
-    lastMS = millis();  // Get ready for the next iteration
-  }
+  // if (millis() - lastMS >= THINGSPEAK_TIMEOUT_MS) {
+  //   if (WiFi.status() == WL_CONNECTED) { writeToThingSpeak(); }
+  //   else { writeToSD(); }
+  //   lastMS = millis();  // Get ready for the next iteration
+  // }
 }

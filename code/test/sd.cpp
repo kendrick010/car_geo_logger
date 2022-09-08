@@ -27,36 +27,15 @@ void setup() {
     while (1);
   }
 
-
-  // Create temp text file for copying
-  myFile = SD.open("/templog.txt", FILE_WRITE);
-  myFile.close();
-
   // Store first entry
   myFile = SD.open("/datalog.txt", FILE_READ);
-  int entryLimiter = countSDEntries() - 1;
-  String lista = myFile.readStringUntil('\n');
-  unsigned long start = myFile.position();
-  myFile.close();
+  int entryLimit = countSDEntries();
 
-  for (int i = 0; i < entryLimiter; i++) {
-    myFile = SD.open("/datalog.txt", FILE_READ);
-    myFile.seek(start);
-    String entry = myFile.readStringUntil('\n');
-    start = myFile.position();
-    myFile.close();
-
-    myFile = SD.open("/templog.txt", FILE_APPEND);
-    myFile.print(entry);
-    myFile.close();
+  for (int i = 0; i < entryLimit; i++) {
+    String buffer = myFile.readStringUntil('%');
+    Serial.print(buffer);
   }
 
-  SD.remove("/datalog.txt");
-
-  myFile = SD.open("/templog.txt");
-  while (myFile.available()) {
-    Serial.println(myFile.read());
-  }
   myFile.close();
   
 

@@ -27,17 +27,12 @@ void setup() {
     while (1);
   }
 
-  myFile = SD.open("/templog.txt");
-  int count = 0;
-  while (myFile.available()) {
-    // String entry = myFile.readStringUntil('\n');
-    // Serial.print(entry);
-    myFile.read();
-    count++;
-  }
-  myFile.close();
+  // Store first entry
+  myFile = SD.open("/datalog.txt", FILE_READ);
 
-  Serial.println(count);
+  String buffer = myFile.readStringUntil('%');
+
+  myFile.close();
   
 
   
