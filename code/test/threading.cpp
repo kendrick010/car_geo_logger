@@ -46,11 +46,11 @@ void connectWifiTask (void * parameters) {
 int countSDEntries() {
   int numEntries = 0;
 
-  while (myFile.available()) {
-    char buffer = myFile.read();
+  while (file.available()) {
+    char buffer = file.read();
     if (buffer == '\n') numEntries++;
   }
-  myFile.seek(0);
+  file.seek(0);
 
   return numEntries;
 }

@@ -10,6 +10,27 @@ String date = "0.0";
 String timeRecord = "0.0";
 String speed = "0.0";
 
+void setGPS(String aLatitude, String aLongitude, String aDate, String aTimeRecord, String aSpeed) {
+  latitude = aLatitude;
+  longitude = aLongitude;
+  date = aDate;
+  timeRecord = aTimeRecord;
+  speed = aSpeed;
+}
+
+void parseDataEntry(String entry) {
+  String entryByDelimiter[5];
+
+  for (int i = 0; i < 4; i++) {
+    unsigned long delimiter = entry.indexOf('|');
+    entryByDelimiter[i] = entry.substring(0, delimiter);
+    entry = entry.substring(delimiter + 1, entry.length());
+  }
+  entryByDelimiter[4] = entry;
+
+  setGPS(entryByDelimiter[0], entryByDelimiter[1], entryByDelimiter[2], entryByDelimiter[3], entryByDelimiter[4]);
+}
+
 void printGPSData() {
   Serial.println("Latitude: " + latitude);
   Serial.println("Longitude: " + longitude);
