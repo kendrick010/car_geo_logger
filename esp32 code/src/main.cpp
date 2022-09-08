@@ -1,24 +1,32 @@
+// Standard libraries
+#include <Arduino.h>
+#include <esp_task_wdt.h>
+
 // WiFi
 #include <WiFi.h>
-#include <esp_task_wdt.h>
 #include "credentials.hpp"
 
 // SD-Card
 #include <SPI.h>
 #include <SD.h>
 
-// GPS
-#include "helperGPS.hpp"
-
-// ThingSpeak
+// GPS, ThingSpeak
+#include "UtilGPS.hpp"
+#include <SoftwareSerial.h>
 #include "ThingSpeak.h"
 
+#define RX_PIN 16
+#define TX_PIN 17
+
+#define WATCHDOG_TIMEOUT_S 30
 #define WIFI_TIMEOUT_MS 20000
 #define THINGSPEAK_TIMEOUT_MS 20000
-#define WATCHDOG_TIMEOUT_S 30
 
 WiFiClient client;
-File file;
+File myFile;
+TinyGPSPlus gps;                          // TinyGPS++ object
+UtilGPS myGPS;
+SoftwareSerial ss(RX_PIN, TX_PIN);        // Serial connection to the GPS device.
 
 // Save last ThingSpeak request
 unsigned long lastMS; 
@@ -33,7 +41,7 @@ void connectWifiTask (void * parameters) {
     }
     
     WiFi.mode(WIFI_STA);
-    WiFi.begin(ssidHome, passwordHome);
+    WiFi.begin(ssidPhone, passwordPhone);
 
     unsigned long startAttemptTime = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < WIFI_TIMEOUT_MS) { }
@@ -46,11 +54,11 @@ void connectWifiTask (void * parameters) {
 int countSDEntries() {
   int numEntries = 0;
 
-  while (file.available()) {
-    char buffer = file.read();
+  while (myFile.available()) {
+    char buffer = myFile.read();
     if (buffer == '\n') numEntries++;
   }
-  file.seek(0);
+  myFile.seek(0);
 
   return numEntries;
 }
@@ -59,13 +67,26 @@ int countSDEntries() {
 void writeToThingSpeak() {
   ThingSpeak.begin(client);
 
-  ThingSpeak.setField(1, latitude);
-  ThingSpeak.setField(2, longitude);
-  ThingSpeak.setField(3, timeRecord);
-  ThingSpeak.setField(4, date);
-  ThingSpeak.setField(5, speed);
+  ThingSpeak.setField(1, myGPS.getLatitude());
+  ThingSpeak.setField(2, myGPS.getLongitude());
+  ThingSpeak.setField(3, myGPS.getTimestamp());
+  ThingSpeak.setField(4, myGPS.getDate());
+  ThingSpeak.setField(5, myGPS.getSpeed());
 
   ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+}
+
+void parseDataEntry(String entry) {
+  String entryByDelimiter[5];
+
+  for (int i = 0; i < 4; i++) {
+    unsigned long delimiter = entry.indexOf('|');
+    entryByDelimiter[i] = entry.substring(0, delimiter);
+    entry = entry.substring(delimiter + 1, entry.length());
+  }
+  entryByDelimiter[4] = entry;
+
+  myGPS.setGPSValues(entryByDelimiter[0], entryByDelimiter[1], entryByDelimiter[2], entryByDelimiter[3], entryByDelimiter[4]);
 }
 
 // Offload SD data to ThingSpeak
@@ -74,29 +95,31 @@ void offloadSD() {
   while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < WIFI_TIMEOUT_MS) { }
 
   if (WiFi.status() == WL_CONNECTED) {
-    file = SD.open("/datalog.txt", FILE_READ);
+    myFile = SD.open("/datalog.txt", FILE_READ);
+
     int entryLimit = countSDEntries();
     for (int i = 0; i < entryLimit; i++) {
-      String buffer = file.readStringUntil('%');
+      String buffer = myFile.readStringUntil('%');
       parseDataEntry(buffer);
       writeToThingSpeak();
       delay(THINGSPEAK_TIMEOUT_MS);
     }
-    file.close();
+
+    myFile.close();
     SD.remove("/datalog.txt");
-    file = SD.open("/datalog.txt", FILE_WRITE);
-    file.close();
   }
 }
 
 // Log each field to SD-Card
 void writeToSD() {
-  file = SD.open("/datalog.txt", FILE_APPEND);
-  if (file) {
-    String dataGPS = latitude + "|" + longitude + "|" + date + "|" + timeRecord + "|" + speed + "%";
-    file.println(dataGPS);
+  myFile = SD.open("/datalog.txt", FILE_APPEND);
+
+  if (myFile) {
+    String dataGPS = myGPS.getLatitude() + "|" + myGPS.getLongitude() + "|" + myGPS.getTimestamp() + "|" + myGPS.getDate() + "|" + myGPS.getSpeed() + "%";
+    myFile.println(dataGPS);
   }
-  file.close();
+  
+  myFile.close();
 }
 
 void setup() {
@@ -126,25 +149,31 @@ void setup() {
   delay(500); 
 
   offloadSD();
+
+  // Create a fresh datalog.txt file
+  if (!(SD.exists("/datalog.txt"))) {
+    myFile = SD.open("/datalog.txt", FILE_WRITE);
+    myFile.close();
+  }
 }
 
 void loop() {
   while (ss.available() > 0) {
     if (gps.encode(ss.read())) {
-      getLocation();
-      getDate();
-      getTime();
-      getSpeed();
+      myGPS.updateLocation(gps);
+      myGPS.updateDate(gps);
+      myGPS.updateTimestamp(gps);
+      myGPS.updateSpeed(gps);
       // All invalid gps data will still store previous valid data
       if (WiFi.status() == WL_CONNECTED) { Serial.println("Connected to internet"); }
       else { Serial.println("Disconnected"); }
-      printGPSData();
+      myGPS.printGPSValues();
     }
   }
 
   if (millis() - lastMS >= THINGSPEAK_TIMEOUT_MS) {
     if (WiFi.status() == WL_CONNECTED) { writeToThingSpeak(); }
     else { writeToSD(); }
-    lastMS = millis();  // Get ready for the next iteration
+    lastMS = millis();
   }
 }
