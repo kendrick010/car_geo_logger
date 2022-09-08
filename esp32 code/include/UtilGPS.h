@@ -4,9 +4,11 @@
 #include <Arduino.h>
 #include <TinyGPS++.h>
 
+// Custom TinyGPS++ wrapper
 class UtilGPS {
-  public:
 
+  public:
+    // Ctor
     UtilGPS();
 
     // Getters
@@ -21,12 +23,14 @@ class UtilGPS {
 
     void printGPSValues();
 
+    // Update GPS members with new readings
     void updateLocation(TinyGPSPlus mGPS);
     void updateDate(TinyGPSPlus mGPS);
     void updateTimestamp(TinyGPSPlus mGPS);
     void updateSpeed(TinyGPSPlus mGPS);
 
   protected:
+    // GPS members
     String latitude, longitude, date, timestamp, speed;
 
 };

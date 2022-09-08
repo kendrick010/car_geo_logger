@@ -1,1 +1,8 @@
 .DS_Store
+
+esp32 code/.pio
+esp32 code/.vscode/.browse.c_cpp.db*
+esp32 code/.vscode/c_cpp_properties.json
+esp32 code/.vscode/launch.json
+esp32 code/.vscode/ipch
+esp32 code/include/credentials.h

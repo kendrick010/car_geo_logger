@@ -4,29 +4,31 @@
 
 // WiFi
 #include <WiFi.h>
-#include "credentials.hpp"
+#include "credentials.h"
 
 // SD-Card
 #include <SPI.h>
 #include <SD.h>
 
 // GPS, ThingSpeak
-#include "UtilGPS.hpp"
 #include <SoftwareSerial.h>
+#include "UtilGPS.h"
 #include "ThingSpeak.h"
 
 #define RX_PIN 16
 #define TX_PIN 17
+#define LED_PIN 4
 
+// Timer constants
 #define WATCHDOG_TIMEOUT_S 30
 #define WIFI_TIMEOUT_MS 20000
 #define THINGSPEAK_TIMEOUT_MS 20000
 
 WiFiClient client;
 File myFile;
-TinyGPSPlus gps;                          // TinyGPS++ object
-UtilGPS myGPS;
 SoftwareSerial ss(RX_PIN, TX_PIN);        // Serial connection to the GPS device.
+TinyGPSPlus tinyGPS;                      // TinyGPS++ object
+UtilGPS myGPS;
 
 // Save last ThingSpeak request
 unsigned long lastMS; 
@@ -76,6 +78,7 @@ void writeToThingSpeak() {
   ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
 }
 
+// Parse entry line on /datalog.txt, extract GPS data
 void parseDataEntry(String entry) {
   String entryByDelimiter[5];
 
@@ -89,7 +92,7 @@ void parseDataEntry(String entry) {
   myGPS.setGPSValues(entryByDelimiter[0], entryByDelimiter[1], entryByDelimiter[2], entryByDelimiter[3], entryByDelimiter[4]);
 }
 
-// Offload SD data to ThingSpeak
+// Offload SD data to ThingSpeak. To prevent the API from timing out, preform requests in 15sec > intervals
 void offloadSD() {
   unsigned long startAttemptTime = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < WIFI_TIMEOUT_MS) { }
@@ -110,7 +113,7 @@ void offloadSD() {
   }
 }
 
-// Log each field to SD-Card
+// Log GPS data to SD-Card
 void writeToSD() {
   myFile = SD.open("/datalog.txt", FILE_APPEND);
 
@@ -126,8 +129,11 @@ void setup() {
   Serial.begin(115200);
   ss.begin(9600);
 
+  // Toggle LED pin when SD initialization failed or warning not to unplug
+  pinMode(LED_PIN, OUTPUT);
+
   if (!SD.begin()) {
-    Serial.println("SD-Card initialization failed");
+    digitalWrite(LED_PIN, HIGH);
     while (1);
   }
   Serial.println("SD-Card initialization done");
@@ -145,6 +151,7 @@ void setup() {
                   taskCore);      // Core where the task should run 
   */
   
+  // Additional thread to maintain wifi connection
   xTaskCreatePinnedToCore(connectWifiTask, "connectWifiTask", 5000, NULL, 1, NULL, 0);        
   delay(500); 
 
@@ -158,12 +165,15 @@ void setup() {
 }
 
 void loop() {
+  // Continually read from GPS
   while (ss.available() > 0) {
-    if (gps.encode(ss.read())) {
-      myGPS.updateLocation(gps);
-      myGPS.updateDate(gps);
-      myGPS.updateTimestamp(gps);
-      myGPS.updateSpeed(gps);
+    if (tinyGPS.encode(ss.read())) {
+      // Update current myGPS members with new readings
+      myGPS.updateLocation(tinyGPS);
+      myGPS.updateDate(tinyGPS);
+      myGPS.updateTimestamp(tinyGPS);
+      myGPS.updateSpeed(tinyGPS);
+
       // All invalid gps data will still store previous valid data
       if (WiFi.status() == WL_CONNECTED) { Serial.println("Connected to internet"); }
       else { Serial.println("Disconnected"); }
@@ -171,9 +181,12 @@ void loop() {
     }
   }
 
+  // Implement below every THINGSPEAK_TIMEOUT_MS
   if (millis() - lastMS >= THINGSPEAK_TIMEOUT_MS) {
-    if (WiFi.status() == WL_CONNECTED) { writeToThingSpeak(); }
-    else { writeToSD(); }
+    digitalWrite(LED_PIN, HIGH);
+    if (WiFi.status() == WL_CONNECTED) { writeToThingSpeak(); } else { writeToSD(); }
+
+    digitalWrite(LED_PIN, HIGH);
     lastMS = millis();
   }
 }

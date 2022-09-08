@@ -1,5 +1,7 @@
-#include "UtilGPS.hpp"
+#include "UtilGPS.h"
 
+// Default values, string floats "0.0". When writing float values as 
+// strings to ThingSpeak, ThingSpeak does not truncate shorter than 6-decimal places
 UtilGPS::UtilGPS() {
   latitude = "0.0";
   longitude = "0.0";
@@ -8,12 +10,14 @@ UtilGPS::UtilGPS() {
   speed = "0.0";
 }
 
+// Getters
 String UtilGPS::getLatitude() { return latitude; }
 String UtilGPS::getLongitude() { return longitude; }
 String UtilGPS::getDate() { return date; }
 String UtilGPS::getTimestamp() { return timestamp; }
 String UtilGPS::getSpeed() { return speed; }
 
+// Setters
 void UtilGPS::setGPSValues(String aLatitude, String aLongitude, String aDate, String aTimestamp, String aSpeed) {
   latitude = aLatitude;
   longitude = aLongitude;
@@ -22,6 +26,8 @@ void UtilGPS::setGPSValues(String aLatitude, String aLongitude, String aDate, St
   speed = aSpeed;
 }
 
+// Use for debugging
+// Timestamp in (UST) and speed in (mph)
 void UtilGPS::printGPSValues() {
   Serial.println("Latitude: " + latitude);
   Serial.println("Longitude: " + longitude);
@@ -31,6 +37,8 @@ void UtilGPS::printGPSValues() {
   Serial.println("Speed: " + speed);
   Serial.println("\n");
 }
+
+// -----------------------------   Update members with new readings from GPS    -----------------------------
 
 void UtilGPS::updateLocation(TinyGPSPlus mGPS) {
   if (mGPS.location.isValid()) {
