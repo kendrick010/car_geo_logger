@@ -24,11 +24,11 @@
 #define WIFI_TIMEOUT_MS 20000
 #define THINGSPEAK_TIMEOUT_MS 20000
 
-WiFiClient client;
-File myFile;
+WiFiClient client;                        // WifFiClient object
+File myFile;                              // File object
 SoftwareSerial ss(RX_PIN, TX_PIN);        // Serial connection to the GPS device.
 TinyGPSPlus tinyGPS;                      // TinyGPS++ object
-UtilGPS myGPS;
+UtilGPS myGPS;                            // Utility object for TinyGPS++
 
 // Save last ThingSpeak request
 unsigned long lastMS; 

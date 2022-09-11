@@ -27,7 +27,7 @@ void UtilGPS::setGPSValues(String aLatitude, String aLongitude, String aDate, St
 }
 
 // Use for debugging
-// Timestamp in (UST) and speed in (mph)
+// Date based on (UST), timestamp in (UST) and speed in (mph)
 void UtilGPS::printGPSValues() {
   Serial.println("Latitude: " + latitude);
   Serial.println("Longitude: " + longitude);
