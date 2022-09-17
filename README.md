@@ -38,11 +38,11 @@
 
 <!------------------------------------------ ABOUT THE PROJECT ---------------------------------------------------------->
 ## About The Project
-Apple has this feature called Screen Time that can ping users a daily/weekly summary on how much time you spend on
+Apple has this feature called Screen Time that pings users a daily/weekly summary on how much time you spend on
 certain apps, and I thought it would be neat to create a similar app that gives you a report on car drives. At the bare
-minimum, I envisioned the app to graphically report miles, speeds, or routes for car trips throughout a week. Although
+minimum, I envisioned the app to graphically report miles, speeds, or routes for car trips throughout the week. Although
 there are countless available apps that already do this, I wanted to challenge myself by designing my own solution. I
-am inclined to the hardware side of engineering, so I decided to create an IoT app and device.
+am inclined to the hardware side of engineering, so I decided to create an IoT device that pairs with the app.
 
 ### Technologies
 * [ESP32](https://www.espressif.com/en/products/socs/esp32)
