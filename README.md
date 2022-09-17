@@ -1,5 +1,5 @@
 <!------------------------------------------ TITLE BLOCK --------------------------------------------------------------->
-<h1 align="center"> Car Geo Logger </h1>
+<h1 align="center"> Car Geo-Logger </h1>
 
 <p align="center">
     "Geo Motors"
