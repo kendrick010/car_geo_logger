@@ -56,6 +56,18 @@ am inclined to the hardware side of engineering, so I decided to create an IoT d
 To get a local copy up and running follow these steps.
 
 ### Prerequisites
+Obtain and assemble the PCB. Download the latest gerber zip file version and request a quote from JLCPCB. The PCB was 
+designed with JLCPCB's design rules and stackups, so I do not recommend quoting from another manufacturer. The default PCB
+specification is sufficient enough when ordering. When assembling and soldering the PCB, consult to the 
+[BOM and Build Guide](docs/README.md).
+
+Install PlatformIO via Visual Studio Code. PlatformIO is a neat integration for embedded development, and we will be using
+it to program/upload code to our ESP32. PlatformIO offers convenient features, such as port detection, larger boards selection, 
+pre-loaded libraries, and all other features offered in any code editor.
+
+System Requirements:
+* Visual Studio Code installed
+* Python 3.x or the latest version
 
 ### Installation
 
