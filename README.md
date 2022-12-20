@@ -1,8 +1,8 @@
 <!------------------------------------------ TITLE BLOCK --------------------------------------------------------------->
-<h1 align="center"> Car Geo-Logger </h1>
+<h1 align="center"> Geo Motors </h1>
 
 <p align="center">
-    "Geo Motors"
+    A Geolocation Logger for Cars
     <br /> <br />
     <a href="https://github.com/github_username/repo_name"> View Demo </a>
     ·
@@ -49,7 +49,6 @@ am inclined to the hardware side of engineering, so I decided to create an IoT d
 * [PlatformIO](https://platformio.org/)
 * [Altium Designer](https://www.altium.com/)
 * [SwiftUI - XCode](https://developer.apple.com/xcode/swiftui/)
-
 
 
 <!------------------------------------------ GETTING STARTED ---------------------------------------------------------->
