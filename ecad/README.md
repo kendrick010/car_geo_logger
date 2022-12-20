@@ -14,7 +14,7 @@ The ideal board is a minimal ESP32 module embedded with a USB to UART bridge, GP
 Hopefully, once the academic quarter ends, I can start and finish the v2 board. Rather than embedding an entire GPS Module into the PCB, I plan to simply add jumper headers for a [GPS Breakout Board Module](https://www.amazon.com/Microcontroller-Compatible-Sensitivity-Navigation-Positioning/dp/B07P8YMVNT/ref=sr_1_3?crid=22ROHB4K82FYE&keywords=gps+module&qid=1671508036&sprefix=gps+modul%2Caps%2C156&sr=8-3)
 
 <p align="center">
-  <img src="v1\outputs\board_v1.jpg" height="500"/>
+  <img src="v1\outputs\board_v1.jpg"/>
 </p>
 
 **December 2022:** The v2 board finalized and sent to JLCPCB to be manufactured. Implemented design changes,
