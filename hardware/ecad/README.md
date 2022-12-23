@@ -1,4 +1,4 @@
-# Car Geo-Logger Board
+# Car Geo-Logger PCB
 
 **September 2022:** First v1 board designed with a horizantal mounted USB-C connector and 0603 (imperial) sized passives. Currently waiting for assembly and testing. The v1 board is a experimental prototype, some expected patch notes for next version, 
 
